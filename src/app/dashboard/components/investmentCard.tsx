@@ -3,30 +3,82 @@ import { FC } from "react";
 import { Status } from "./status";
 
 interface InvestmentCardProps {
+  invoiceNumber: number;
+  id: string;
   name: string;
-  imageUrl: string;
-  address: string;
-  city: string;
-  investmentType: string;
+  description: string;
+  price: number;
+  initialDeposit: number;
   quantity: number;
-  status: {
-    text: string;
-    active: boolean;
+  documentationFee: number;
+  total: number;
+  propertyType: string;
+  media: string[];
+  developerInfo: {
+    name: string;
+    address: string;
+    phoneNumber: number;
+    email: string;
+    logo: string;
   };
+  realtorGroupInfo: {
+    adminName: string;
+    name: string;
+    address: string;
+    phoneNumber: number;
+    email: string;
+    logo: string;
+  };
+  realtorInfo: {
+    adminName: string;
+    name: string;
+    address: string;
+    phoneNumber: number;
+    email: string;
+    logo: string;
+  };
+  propertyData: {
+    id: string;
+    name: string;
+    description: string;
+    price: string;
+    initialDeposit: string;
+    quantity: number;
+    documentationFee: string;
+    total: string;
+    propertyType: string;
+    media: string[];
+    invoiceId: number;
+  };
+  onClick: (id: string) => void;
 }
 export const InvestmentCard: FC<InvestmentCardProps> = ({
+  invoiceNumber,
+  id,
   name,
-  imageUrl,
-  address,
-  city,
-  investmentType,
+  description,
+  price,
+  initialDeposit,
+  documentationFee,
   quantity,
-  status,
+  total,
+  propertyType,
+  media,
+  propertyData,
+  developerInfo,
+  realtorGroupInfo,
+  realtorInfo,
+  onClick,
 }) => {
   return (
-    <div className="flex items-start w-full h-[144px] p-8 border-b-lightGrey border-b  border-solid">
+    <div
+      className="flex items-start w-full h-[144px] px-4 py-8 border-b-lightGrey border-b  border-solid cursor-pointer"
+      onClick={() => {
+        onClick(id);
+      }}
+    >
       <Image
-        src={imageUrl}
+        src={propertyData.media[0]}
         alt="profile picture"
         width={92}
         height={88}
@@ -34,13 +86,16 @@ export const InvestmentCard: FC<InvestmentCardProps> = ({
       />
       <div className="flex items-start justify-between w-full h-full">
         <div>
-          <h5 className="font-semibold text-lg">{name}</h5>
-          <p className="text-darkGray text-sm">{investmentType}</p>
-          <p className="text-darkGray text-sm">{address}</p>
-          <p className="text-darkGray text-sm">{city}</p>
+          <h5 className="font-semibold text-lg">{propertyData.name}</h5>
+          <p className="text-darkGray text-sm">{propertyData.propertyType}</p>
+          {/* <p className="text-darkGray text-sm">{propertyData.email}</p> */}
+          {/* <p className="text-darkGray text-sm">{city}</p> */}
         </div>
         <div className="flex flex-col justify-between h-full">
-          <p>QTY {quantity}</p> <Status {...status} />
+          <p className="text-darkGray text-xs p-2">
+            QTY {propertyData.quantity}
+          </p>
+          {/* <Status {...status} /> */}
         </div>
       </div>
     </div>

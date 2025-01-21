@@ -1,20 +1,18 @@
 "use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AppButton } from "@/components";
 import AppTextInput from "../../../components/ui/appTextInput";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
+import { signIn } from "next-auth/react";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { useState } from "react";
-// import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import ROUTES from "@/routes";
+import showToast from "@/utils/showToast";
 
 const validationSchema = yup.object().shape({
-  phoneNumber: yup
-    .number()
-    .typeError("Must be number")
-    .required("Phone number is required")
-    .label("Phone number"),
+  customer: yup.string().required("Email is required").label("Email"),
   password: yup
     .string()
     .min(6)
@@ -23,45 +21,56 @@ const validationSchema = yup.object().shape({
     .label("Password"),
 });
 
-function Page() {
+const Login = () => {
   const {
     formState: { errors },
     register,
     handleSubmit,
   } = useForm({ resolver: yupResolver(validationSchema) });
   const [isLoading, setIsLoading] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
 
-  const onSubmit = async () => {
-    // const formData = { ...data };
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
-    // Change phone number to +234 format
-
+  const onSubmit = async (data: any) => {
+    const formData = { ...data };
     setIsLoading(true);
-    // const res = await signIn("credentials", {
-    //   ...formData,
-    //   redirect: false,
-    // });
-    // if (res?.ok) {
-    //   router.replace("/dashboard");
-    // } else {
-    //   alert("Failed to login. An error occured.");
-    // }
-    router.replace("/dashboard");
+    const res = await signIn("credentials", {
+      customer: data.customer,
+      password: data.password,
+      redirect: false,
+    });
+    if (res?.ok) {
+      router.replace(ROUTES.DASHBOARD);
+    } else {
+      showToast("Failed to login.", "error");
+    }
     setIsLoading(false);
   };
+  if (!isClient) {
+    return null; // Prevent rendering on the server-side
+  }
 
   return (
     <>
+      <h2 className="text-center text-4xl text-darkPlus font-bold">
+        Speedly ​
+      </h2>
+      <p className="text-lg font-semibold text-darkPlus mt-2 text-center">
+        Real Estate Owner
+      </p>
       <form
         onSubmit={handleSubmit(onSubmit)}
         className="mt-6 flex flex-col gap-4"
       >
         <AppTextInput
-          placeholder="Phone number"
+          placeholder="Email"
           type="tel"
-          {...register("phoneNumber")}
-          error={errors.phoneNumber?.message as string}
+          {...register("customer")}
+          error={errors.customer?.message as string}
           autoFocus
         />
         <AppTextInput
@@ -74,13 +83,15 @@ function Page() {
         <div className="flex justify-between items-center gap-6">
           <AppButton
             title="Login"
-            className="text-[1rem] font-medium h-[50px] bg-secondary w-full"
+            className="text-[1rem] font-medium h-[50px] bg-primary w-full"
             type="submit"
             isLoading={isLoading}
           />
+        </div>
+        <div className="flex items-center justify-center">
           <Link
             href="/auth/reset-password"
-            className="self-center text-white text-sm w-full"
+            className="self-center text-primary text-sm "
           >
             Forgot password?
           </Link>
@@ -88,6 +99,6 @@ function Page() {
       </form>
     </>
   );
-}
+};
 
-export default Page;
+export default Login;

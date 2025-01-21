@@ -7,6 +7,6 @@ export default function Home() {
 
   useEffect(() => {
     router.replace("/auth/login");
-  }, [router]);
+  }, []);
   return null;
 }

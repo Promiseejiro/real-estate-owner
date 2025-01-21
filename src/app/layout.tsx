@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import LayoutWrapper from "./layoutWrapper";
+import Providers from "./providers";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -24,10 +25,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} text-darkPlus `}>
       <body className="font-primary relative text-sm text-darkPlus">
-        <LayoutWrapper>
-          {children}
-          <div id="modal-root"></div>
-        </LayoutWrapper>
+        <Providers>
+          {" "}
+          <LayoutWrapper>
+            {children}
+            <div id="modal-root"></div>
+          </LayoutWrapper>
+        </Providers>
       </body>
     </html>
   );

@@ -1,100 +1,136 @@
-import { DashboardHeader } from "./components/dashboardHeader";
+"use client";
+import { useEffect, useState } from "react";
 import { Status } from "./components/status";
-import { InvestmentCard } from "./components/investmentCard";
-import { InvestmentBanner } from "./components/investmentBanner";
-import { ProgressBar } from "./components/progressBar";
-import { DealerCard } from "./components/dealersCard";
-import InvestmentPreview from "./components/investmentPreview";
+import {
+  InvestmentCard,
+  InvestmentBanner,
+  DealerCard,
+  ProgressBar,
+  ProfileDropdown,
+} from "./components";
+import { InvioceDataType } from "@/types";
+import { fetchCustomerInvoice } from "./apiRequests";
+import { useQuery } from "@tanstack/react-query";
+
+import { AppButton } from "@/components";
+import { BsArrowRight } from "react-icons/bs";
+import LoaderView from "@/components/loaderView";
 
 const Page = () => {
-  const investmentArray = [
-    {
-      name: "Ikoyi farm land",
-      address: "lagos Nigeria",
-      city: "Lagos Nigeria",
-      investmentType: "Building",
-      quantity: 1,
-      status: { active: false, text: "all" },
-      imageUrl:
-        "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N//AABEIAJQAwgMBIgACEQEDEQH/xAAcAAABBQEBAQAAAAAAAAAAAAAFAAIDBAYBBwj/xAA6EAABAwMCAwQHCAEEAwAAAAABAAIDBAUREiETMUEGIlFhFBUycYGRoSMzQlJiscHw0SRy4fEHFiX/xAAaAQACAwEBAAAAAAAAAAAAAAACAwABBAUG/8QAJREAAgICAgICAgMBAAAAAAAAAAECEQMhEjEEEyJBMlEFYXEz/9oADAMBAAIRAxEAPwDaae49Aa9ha8EDmtCPu3IJX80oaizR+w1XTzVKk9lquqgjrU5NCcFRBJYSTwoQaGroYnBOaoQZw0x0eysYXMBWQEVtOXM25rJXWjqQXaXL0F0QdzVOqoWSDohAkjzOKvrKd+l4cW+KtsqJanYg7rU1Nka4+yPklFaGsPspWTHzA4sB0VA/jNccrXW2FzQ0JUtE1pG2EWhha0BTHi4BRVHWtT2tTgAnLQGcwu4XUlCWJcXVxUQ5hJOXFCFFv3bkFrhujTfu3ITWjvKMiJ6Qd1qtnmq1MNmq0RuoixoKcE3CcoQcF0LgXQoQ6nBN6pwVUQflNJSJUb5GtPecG+GSArISZXRhQtkY44a4O9xynk4Uopj9ITXtbpKY6UM9twHxUZqo3ghj2u9xVaKpnWuAKtROBaEJdPhyt09QNIVlJ2EQuqBsgTxIFLCokXUwPBTsqyjqaSkSmkqEO5STMpKF2QRDLHYQuuiOoYRakGQV2ema7fChQPpMgAFWSdyVQq5PRzkHCZDc2vaQSENotMllqw1+MhWoHiSPI3WSuVbonGl2xKP2mcGnBcVFIlhJOVcVLCcZCnBBAIIVlneqjqKllNE6SR2AOXmVyapgg+9mYz3uWaqpantBdm2+heWsGSX9GtQylQUY2VLnfamrqBFDK6OLO7Gbah5lAr9TGondLDI7BHLOd1r6ns/T2wgNJkLfxFCKpsbWnDQAPqsssrTNkMKlExhFRTkYkmb/ALdQRq3dqbtQv0mqNTGPwTb/ACPMfslUSNafZzlQmgpqtgLMNe3lhOjl5ITPDxZFfO0tRPrlcZBn2WAnb5KjZu0kvpDA6UtJxgqOrjdTvdDKGv8AfutG+OkudBTRUUsUehoD43QjDhjG2ORAVyyYoVydWXiwyyOrNFRV/pdOHc3DbUORwrlPUuAIKAWoxwVz4oXH0fOGxuO7Ns/FGY01prTMmSDhOmEBW4G5Ukdfk4yEHqQRnBO6qCpdG7SUAytGsZV5UvpWOZWXjuAGM5Uzrk0NRgh2Sv0dQoBcwXYD8rLV1z56SUMZcXtfnUTnmhci1E9B9N8wksWLqcDmuqWSj0Gi5FWJnhjckhVaR2lpJVG7VfDjO6OxYB7S1kYa4h2/vWQhvb4pSwuyOhUvaCpdM8gE4WebGS/fmVknKXLQE3Qd9NNRJrJ67IvFdzDBjVyCztJTuICJUkOqURvHXqii2UmwlQXSpqpe60huea0b63g0udXe6qG02+JrMhoCsyWk19SKZpc1js5c3mAmJMdDvZhpbjLX3fcuMTNRa0/ix1W/7J0jrfa+Pp+3qu+XHnjohF17LW20iWsa2YVBbpaNeWtbkdEedPNBaaNtOBx3xAN18mgDmkeyMm0vo1qDSIrkXveTIcLNXFrWhwJVC7z1Mdx/11e4nPJp2CL1VsnmtgqmguBbsfFIn2a8bpGQq62Nhc2OJ0r/AC5KOkqpxI3iUjmZ6sdk/Jdkgq4apuiB72F2HaBkjz9ybDTXueoeW0rY2NOxc5x+PgnR0hU9sIXOjZPDxmjLsbkdUKsobHVB0kj9DXjusYXH6LSiOY0jo58F4B5BZqmtM9wqhHTuLJD1a/TndHSyKn0Lv1yTD/Zlvp98zCdbIGO4uncBxOw9+2/vW4ZQYPs/RR9kLDBZbfw296Z5zI/xK0IaPBaTJknzk5MByW8EbtVKW1ZOdK1RAPRQva3PIIWqImZN1pIOcY9yiltrseyVrTpGdgq8pbjkFTZaRjZbWTzaVA60gH2VrpNPgFXfo8AlNjEjM+rD+QpLS93wCSnIlBKNxAPNDLqHOjJI2Vqir4pc5cF2uEbwBnYpnsRnPO7pRSySuLR3UEmY6J27DsvT/Vsbw4+KFV9ha9hc0fRLljb2gZRsCWiIVELSNipqyGeCdjmAeeyL2e3cB7WuGEXr7a1+CB9ExR0UlobY3mSEaueEZpZhSVkczvZBwduQQy3QGDYDZEJBkbFMXQaK/amOOalLteNLRpLt9Y8R5p1LFJd+z8LKKSOOaMaNcgJ5eXX3bKGdjntDC46Ac4yrFhkpKeSripnuOl2S14xhwAJx48wscsMcblJfbNuPJLIq/RjK/sbVVNzZJd7rIYwRqYxugYxyAzt+63NxrKOgt8NGXsGY/soSd3ABYvtddpqm5xwiQtD3jU4dAiVVDbqyMRw04qriYtPEGS5qC3Ie4KNGXqu0EQqZ44onCVvINbkK9TXsVVIPwSjmw7IHX0lTBUvZHHBHoOnTqyXHxwFQlFcyZjpo2NZn2gTn9lHiUkEsji9mtp5uKzvYDsoRDPwu0EUFODFNG+N+w+8bkZ+hPyXLfNmdoyfaRzsvZZKm4trZqV0WiXW98rCHH9Iz5hHj/QrI0tnobVJnAUbRgJSnEZwtpzhslS1igdVtQa61bodwhBu++D+6BsNI1L6oeSgfUhZ71oD/ANprrmP6UthpBqSoHkq0lSPJB5LkP6VXdcd/+ULQSYd9JHkks/6w9ySnEuyK11ZaNWpwyr5ujtYJcSB5oHQ0Nzki+xgJA232VK4zVNGS2aNzHA4OUzgYoqzeUd1Y9oBKMtfHLC3B5ryGju8kZ7xPNay230OEbdWUzVDTXshAnBAVxxBG6EUlaJSHZ5easmpHiFZRaw0HbZLUOSourGt5kKM17emFVkouvG/NQw2yOpuEFVxnRywvLg0fjy0twfgoBXtPPCfHWt8cFDOKmqGY5uErRl+1toM0xc3bx0n9lp+zdNT09qxSU7Wl4+0Lhu52OZ8VK4QVrWwvOMnAPgq8dWLU58NQSBnZ2NlinCWPRvhkjkX9gC/xzRPeSQMnPcGAg0uJqch56dUav9XFUs+9Zv5rN8drQWRkkdXHr7ghxth5Aj2boxJdaVp5F+rHkN16Yw781g+xDOJcZpTk8OLmfEn/AIK3EZ7y241SOfmlci63kuSn7MpM5Lkv3ZTRBke0jyxjiF53XXZ8VQWheh9pvu3Ly65ROdWk+aFL9h/WiwL5J1BSN9d4FFrTaBPGC5gLSOqoXrs86ncHwAAE7tV6K+RWdfHHoVH66d5qq62VAPsrnq2o/Kr+JPkWvXJSVP1bU/lSU+JPkfRsVtgiaWhoHXksH29pIGxyPAHIDkvR5Dled9vT/p5Ahn+IGHckectjb0VincYnhwOwUDOQ9ymCx82dP1xYcpr0IW5LiD5Kdl91n2ys6RslD7XxRRyNugZYoo0E13JONRUlPWSSHbl70AcTrCI0bi1pKdsQ0kFDUyhdZXTNIaASTsAOaJWTsrXXaL0h59Gp84a57e8/3Dw81oLdbKa1VdLTWyP0qqlkzLVSDPDjB3x4ZIx8ylyzRi+P2UlYOtFHcKqVutrYGjBcZHYIHu5/NLtNKxs725yM7LZXu2VDXy1Vu73E70kQO+cAZHyGy84vsdRO8h4cx45gjBVZLWpDcFPaA9wc0sJD8IGHAOPeKv1tJUOe1rDq8VWkoHU8umQ6nFufclxNEraND2LuMFJUVDZyWtm0gOxsCM/5W+h3AIOQRsR1Xj4E0MD3tyHNGR71uuPVQiJ1NNwpckNJ9k+AI/vJFk8h4mv0Z5YuRs2eyuTewg9tvzJWiOriMU5HeA3z5jxCLyOa+MOY4OaeoK0Ys8Mi+LMssco9mS7Tew5efTxB9Vv4L0DtR9w4rzuaUNq+aYy4GgtFw9EjMTzt0yp6quiqWhjSCUAedbQRuo6cPL3aDjCQ5bo1qC42H2tg2Dw3KtxUdK8fhWJu89XTGKRp214O6JW65VDmjVnkrnFpWJjJN0aj1ZT/ANC4hHrWX9SSTbGUjd/+107s4kbssn2rucdc17WPyT4LJ0sXGrhBrcN8HBWwquzjI6MuYMODea1Taoy4sbjJGKZsrDBsqrTufIqwx2yxHRTJSNkogMrmoFJh3Uj2XLoe4HWNl6v2U7JU9rjirLswTVrm6mU53EXvHU/ssn/43sbbtenVdW0mmoQJCDydJnuj6Er0eaua5tbVkEAHhgnwHX6pflZ/WqXZk48pEctbNPcIw8hkbSe6N8bbf5VTs2WekPfPM7iMYY9H5g1x/vxVG7yerIBxHDjSl73kdO4dIHyT6QOirKape0hzy17x/uAa/wCuCsHiZXHMpSHZILhSNY+riYcxxvcfL5qjWtbcGllRbhIzxeBnlnmiDnwxg6QC4fHoqs0ksndzgHoPkvRNX2c9Nroy9b2Wt75JOE6qpi3wHEafd1+qFT9kC6QBlxi1HlxIiFtHNLXNyTvz+ac1+Iy+QhrQASTy3/6SpY4LbHRzZOkYJ/YqTIMldA6NrgXtYDlw8Faqg2OsELMHS3EnUb/3mtFeLhDR0xcHtdLv3MZOR/CypbiKTiFwn0a3HzJ3H7Li+VlU5/HpGzHdWxkjRDJo77oXHYD7yJ43yPLb+5V2zXCZs0kUpDmvbrY4b6hv/wBKpcA4MgrY/aA7w8Wnlj3KvTTaK8Pjd9nIwlo/K7IyPjz+KVCTW0FJJ6YQ7T5NLqxs4ZC8kus5ZXkAr1i5Siaz1GN2jvNPQDONl4/e8mvOF3/Gy+3HbOfkjwnQZopTKGN8VoqK3ND9m8wsdQSFmk55br0OhlaWRv8AJBWzXdRAN3ohJA5undu6r2+ICMbcgtVLR8SR+2xWedE6mmfGRyKKbtCYqpCLG56JKIyHPJJI4sbYOte98P8AvK9PuVQPVDj+n+F5baj/APaef1H91sb3VuZaC0HIwtCWmKfaMMx31JU4cq8amaFmfZpiShymiI5qBoRzsjQMuXaGgppRmIya5AfxBu+PjjHxVLWwpOkepdnaf1R2MpTTtHFnaJXn9TtySfDGyr3uocLezRgsqWY26Z5n45+gRrtE90dpkjIDXP2AbyaM4H7rN1M3pdjli0AcLvNyd9HQrj+VPlkdgYVqyLtU0z+iTFwy7DR4bDn9UYkjM9qgmYMytYHnHNwI3Hy+qByiWutlvLnADdjgB1bn/C1M7tFrbURkZa3Dc+9Jjd/4MlSSRBabkDHFTFjpqnoB+JurOfl+xV11WInmNjBPVk94NPci36nqs418sfHqKUPDXNLeGzZwzuQCrslwMFqhkjpuA+YgNaeWfPbnzXe8XzYzSi+zFlwtO0EJnFjQZnguwD8clRFklTSyQxSuic4DDsclSgnkqYI5HjQ5zRqAGOpV2mG2kbFzSMrR5EeeNoXDUkZWroRE+anpS+aWQt4r3HxO+/z2VQv9IllIwOGeH9TjPyA+aP3h7LZTOhjyZpPtHkbnPh/hZWnIcZWh3fccg+GcH98Lz8dqzoFyWYz0WmId9mpwHjg50/L+EOEzfTeIzk2HW0DodRx/CmbM+GGZsbA2ZmHta7ntzHyH0Vao0Mr+LE3LHsbI8DyyAPmmRWiBOI8Siq4g3u8FzTvydpJP8Lza525z6rXnZelWpxeS1w7zu6f1O/F9Nkx3Zdr28SQDGOS6v8e/g0ZM9KSZ5m2ExsI8lq7dWNbRxgnfARGaxUjHYLWpR26jiaW4GFq9bsizRoNWl7KmMO64GVHdrWyR2oD5KGgqaejZhpG3mrEt3gduSr9bAeSNgQ2gZPNdRT1pB4BJT1sr2I83t7iLs/H5itHenk27mkkoumG+0ZiLp7laYNlxJZWaokgC2X/jGnik7RCV7cuhge9nk7YZ+pSSQT/FlT/E9Iq3GptUT5Tkve0u+Sx1jeXV0tO7eMxFhz4blJJcTN2v8Dw/iy/boWuZTQHOjiO+pOVp7g7h2+cNa3ETCWDHLHJJJDj7kSfaBdJ9hSsDAN2xc/1c0Av9TLLcqSB7vszHrI88kfwkktPhf9ULydBqh3haT5furzDhwx4LiS70/wAWY49gy/NBOsganS7n3Ywsc86a6qx11/Q7JJLz8Ojeui/TRtlqjr5nfPXnj+UBq3upI2wQ7NaAATz3cf8AJ+aSSdjIHqXuywMbs3jBvw5rXXfuU5DQBskkuj/HdSMnlfR59cXu4p3KFyyO8Ukl1DIVzK/xXeK/xSSVlC4j/wAxSSSVEP/Z",
+  const {
+    data: invoice,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["fetchCustomerInvoice"],
+    queryFn: fetchCustomerInvoice,
+    onSuccess: (res) => console.log("Recent Transactions", res),
+    onError: () => {
+      alert("Error fetching recent transactions.");
     },
-    {
-      name: "Ikoyi farm land",
-      address: "lagos Nigeria",
-      city: "Lagos Nigeria",
-      investmentType: "Building",
-      quantity: 1,
-      status: { active: false, text: "all" },
-      imageUrl:
-        "data:image/jpeg;base64,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",
-    },
-    {
-      name: "Ikoyi farm land",
-      address: "lagos Nigeria",
-      city: "Lagos Nigeria",
-      investmentType: "Building",
-      quantity: 1,
-      status: { active: false, text: "all" },
-      imageUrl:
-        "data:image/jpeg;base64,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",
-    },
-  ];
-  const dealers = [
-    {
-      name: "Ikoyi farm land",
-      address: "lagos Nigeria",
-      city: "Lagos Nigeria",
-      investmentType: "Building",
+  });
+  const [investmentFilterString, setIvestmetFilterString] = useState("All");
+  const [investmentId, setInvestmetId] = useState("");
 
-      imageUrl:
-        "data:image/jpeg;base64,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",
-    },
-  ];
+  const [investmentPreview, setIvestmenPreview] = useState<
+    InvioceDataType | undefined
+  >();
+  const [allInvestment, setAllInvestment] = useState<InvioceDataType[]>([]);
+  const [filteredInvestment, setFilteredInvestment] = useState<
+    InvioceDataType[]
+  >([]);
 
-  const property = {
-    id: "heggee",
-    name: "Ikoyi farm land",
-    date: "12-4-2000",
-    amount: 12,
-    address: "lagos Nigeria",
-    city: "Lagos Nigeria",
-    investmentType: "Building",
-    invioceId: "12pdid",
-    imageUrl:
-      "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N//AABEIAJQAwgMBIgACEQEDEQH/xAAcAAABBQEBAQAAAAAAAAAAAAAFAAIDBAYBBwj/xAA6EAABAwMCAwQHCAEEAwAAAAABAAIDBAUREiETMUEGIlFhFBUycYGRoSMzQlJiscHw0SRy4fEHFiX/xAAaAQACAwEBAAAAAAAAAAAAAAACAwABBAUG/8QAJREAAgICAgICAgMBAAAAAAAAAAECEQMhEjEEEyJBMlEFYXEz/9oADAMBAAIRAxEAPwDaae49Aa9ha8EDmtCPu3IJX80oaizR+w1XTzVKk9lquqgjrU5NCcFRBJYSTwoQaGroYnBOaoQZw0x0eysYXMBWQEVtOXM25rJXWjqQXaXL0F0QdzVOqoWSDohAkjzOKvrKd+l4cW+KtsqJanYg7rU1Nka4+yPklFaGsPspWTHzA4sB0VA/jNccrXW2FzQ0JUtE1pG2EWhha0BTHi4BRVHWtT2tTgAnLQGcwu4XUlCWJcXVxUQ5hJOXFCFFv3bkFrhujTfu3ITWjvKMiJ6Qd1qtnmq1MNmq0RuoixoKcE3CcoQcF0LgXQoQ6nBN6pwVUQflNJSJUb5GtPecG+GSArISZXRhQtkY44a4O9xynk4Uopj9ITXtbpKY6UM9twHxUZqo3ghj2u9xVaKpnWuAKtROBaEJdPhyt09QNIVlJ2EQuqBsgTxIFLCokXUwPBTsqyjqaSkSmkqEO5STMpKF2QRDLHYQuuiOoYRakGQV2ema7fChQPpMgAFWSdyVQq5PRzkHCZDc2vaQSENotMllqw1+MhWoHiSPI3WSuVbonGl2xKP2mcGnBcVFIlhJOVcVLCcZCnBBAIIVlneqjqKllNE6SR2AOXmVyapgg+9mYz3uWaqpantBdm2+heWsGSX9GtQylQUY2VLnfamrqBFDK6OLO7Gbah5lAr9TGondLDI7BHLOd1r6ns/T2wgNJkLfxFCKpsbWnDQAPqsssrTNkMKlExhFRTkYkmb/ALdQRq3dqbtQv0mqNTGPwTb/ACPMfslUSNafZzlQmgpqtgLMNe3lhOjl5ITPDxZFfO0tRPrlcZBn2WAnb5KjZu0kvpDA6UtJxgqOrjdTvdDKGv8AfutG+OkudBTRUUsUehoD43QjDhjG2ORAVyyYoVydWXiwyyOrNFRV/pdOHc3DbUORwrlPUuAIKAWoxwVz4oXH0fOGxuO7Ns/FGY01prTMmSDhOmEBW4G5Ukdfk4yEHqQRnBO6qCpdG7SUAytGsZV5UvpWOZWXjuAGM5Uzrk0NRgh2Sv0dQoBcwXYD8rLV1z56SUMZcXtfnUTnmhci1E9B9N8wksWLqcDmuqWSj0Gi5FWJnhjckhVaR2lpJVG7VfDjO6OxYB7S1kYa4h2/vWQhvb4pSwuyOhUvaCpdM8gE4WebGS/fmVknKXLQE3Qd9NNRJrJ67IvFdzDBjVyCztJTuICJUkOqURvHXqii2UmwlQXSpqpe60huea0b63g0udXe6qG02+JrMhoCsyWk19SKZpc1js5c3mAmJMdDvZhpbjLX3fcuMTNRa0/ix1W/7J0jrfa+Pp+3qu+XHnjohF17LW20iWsa2YVBbpaNeWtbkdEedPNBaaNtOBx3xAN18mgDmkeyMm0vo1qDSIrkXveTIcLNXFrWhwJVC7z1Mdx/11e4nPJp2CL1VsnmtgqmguBbsfFIn2a8bpGQq62Nhc2OJ0r/AC5KOkqpxI3iUjmZ6sdk/Jdkgq4apuiB72F2HaBkjz9ybDTXueoeW0rY2NOxc5x+PgnR0hU9sIXOjZPDxmjLsbkdUKsobHVB0kj9DXjusYXH6LSiOY0jo58F4B5BZqmtM9wqhHTuLJD1a/TndHSyKn0Lv1yTD/Zlvp98zCdbIGO4uncBxOw9+2/vW4ZQYPs/RR9kLDBZbfw296Z5zI/xK0IaPBaTJknzk5MByW8EbtVKW1ZOdK1RAPRQva3PIIWqImZN1pIOcY9yiltrseyVrTpGdgq8pbjkFTZaRjZbWTzaVA60gH2VrpNPgFXfo8AlNjEjM+rD+QpLS93wCSnIlBKNxAPNDLqHOjJI2Vqir4pc5cF2uEbwBnYpnsRnPO7pRSySuLR3UEmY6J27DsvT/Vsbw4+KFV9ha9hc0fRLljb2gZRsCWiIVELSNipqyGeCdjmAeeyL2e3cB7WuGEXr7a1+CB9ExR0UlobY3mSEaueEZpZhSVkczvZBwduQQy3QGDYDZEJBkbFMXQaK/amOOalLteNLRpLt9Y8R5p1LFJd+z8LKKSOOaMaNcgJ5eXX3bKGdjntDC46Ac4yrFhkpKeSripnuOl2S14xhwAJx48wscsMcblJfbNuPJLIq/RjK/sbVVNzZJd7rIYwRqYxugYxyAzt+63NxrKOgt8NGXsGY/soSd3ABYvtddpqm5xwiQtD3jU4dAiVVDbqyMRw04qriYtPEGS5qC3Ie4KNGXqu0EQqZ44onCVvINbkK9TXsVVIPwSjmw7IHX0lTBUvZHHBHoOnTqyXHxwFQlFcyZjpo2NZn2gTn9lHiUkEsji9mtp5uKzvYDsoRDPwu0EUFODFNG+N+w+8bkZ+hPyXLfNmdoyfaRzsvZZKm4trZqV0WiXW98rCHH9Iz5hHj/QrI0tnobVJnAUbRgJSnEZwtpzhslS1igdVtQa61bodwhBu++D+6BsNI1L6oeSgfUhZ71oD/ANprrmP6UthpBqSoHkq0lSPJB5LkP6VXdcd/+ULQSYd9JHkks/6w9ySnEuyK11ZaNWpwyr5ujtYJcSB5oHQ0Nzki+xgJA232VK4zVNGS2aNzHA4OUzgYoqzeUd1Y9oBKMtfHLC3B5ryGju8kZ7xPNay230OEbdWUzVDTXshAnBAVxxBG6EUlaJSHZ5easmpHiFZRaw0HbZLUOSourGt5kKM17emFVkouvG/NQw2yOpuEFVxnRywvLg0fjy0twfgoBXtPPCfHWt8cFDOKmqGY5uErRl+1toM0xc3bx0n9lp+zdNT09qxSU7Wl4+0Lhu52OZ8VK4QVrWwvOMnAPgq8dWLU58NQSBnZ2NlinCWPRvhkjkX9gC/xzRPeSQMnPcGAg0uJqch56dUav9XFUs+9Zv5rN8drQWRkkdXHr7ghxth5Aj2boxJdaVp5F+rHkN16Yw781g+xDOJcZpTk8OLmfEn/AIK3EZ7y241SOfmlci63kuSn7MpM5Lkv3ZTRBke0jyxjiF53XXZ8VQWheh9pvu3Ly65ROdWk+aFL9h/WiwL5J1BSN9d4FFrTaBPGC5gLSOqoXrs86ncHwAAE7tV6K+RWdfHHoVH66d5qq62VAPsrnq2o/Kr+JPkWvXJSVP1bU/lSU+JPkfRsVtgiaWhoHXksH29pIGxyPAHIDkvR5Dled9vT/p5Ahn+IGHckectjb0VincYnhwOwUDOQ9ymCx82dP1xYcpr0IW5LiD5Kdl91n2ys6RslD7XxRRyNugZYoo0E13JONRUlPWSSHbl70AcTrCI0bi1pKdsQ0kFDUyhdZXTNIaASTsAOaJWTsrXXaL0h59Gp84a57e8/3Dw81oLdbKa1VdLTWyP0qqlkzLVSDPDjB3x4ZIx8ylyzRi+P2UlYOtFHcKqVutrYGjBcZHYIHu5/NLtNKxs725yM7LZXu2VDXy1Vu73E70kQO+cAZHyGy84vsdRO8h4cx45gjBVZLWpDcFPaA9wc0sJD8IGHAOPeKv1tJUOe1rDq8VWkoHU8umQ6nFufclxNEraND2LuMFJUVDZyWtm0gOxsCM/5W+h3AIOQRsR1Xj4E0MD3tyHNGR71uuPVQiJ1NNwpckNJ9k+AI/vJFk8h4mv0Z5YuRs2eyuTewg9tvzJWiOriMU5HeA3z5jxCLyOa+MOY4OaeoK0Ys8Mi+LMssco9mS7Tew5efTxB9Vv4L0DtR9w4rzuaUNq+aYy4GgtFw9EjMTzt0yp6quiqWhjSCUAedbQRuo6cPL3aDjCQ5bo1qC42H2tg2Dw3KtxUdK8fhWJu89XTGKRp214O6JW65VDmjVnkrnFpWJjJN0aj1ZT/ANC4hHrWX9SSTbGUjd/+107s4kbssn2rucdc17WPyT4LJ0sXGrhBrcN8HBWwquzjI6MuYMODea1Taoy4sbjJGKZsrDBsqrTufIqwx2yxHRTJSNkogMrmoFJh3Uj2XLoe4HWNl6v2U7JU9rjirLswTVrm6mU53EXvHU/ssn/43sbbtenVdW0mmoQJCDydJnuj6Er0eaua5tbVkEAHhgnwHX6pflZ/WqXZk48pEctbNPcIw8hkbSe6N8bbf5VTs2WekPfPM7iMYY9H5g1x/vxVG7yerIBxHDjSl73kdO4dIHyT6QOirKape0hzy17x/uAa/wCuCsHiZXHMpSHZILhSNY+riYcxxvcfL5qjWtbcGllRbhIzxeBnlnmiDnwxg6QC4fHoqs0ksndzgHoPkvRNX2c9Nroy9b2Wt75JOE6qpi3wHEafd1+qFT9kC6QBlxi1HlxIiFtHNLXNyTvz+ac1+Iy+QhrQASTy3/6SpY4LbHRzZOkYJ/YqTIMldA6NrgXtYDlw8Faqg2OsELMHS3EnUb/3mtFeLhDR0xcHtdLv3MZOR/CypbiKTiFwn0a3HzJ3H7Li+VlU5/HpGzHdWxkjRDJo77oXHYD7yJ43yPLb+5V2zXCZs0kUpDmvbrY4b6hv/wBKpcA4MgrY/aA7w8Wnlj3KvTTaK8Pjd9nIwlo/K7IyPjz+KVCTW0FJJ6YQ7T5NLqxs4ZC8kus5ZXkAr1i5Siaz1GN2jvNPQDONl4/e8mvOF3/Gy+3HbOfkjwnQZopTKGN8VoqK3ND9m8wsdQSFmk55br0OhlaWRv8AJBWzXdRAN3ohJA5undu6r2+ICMbcgtVLR8SR+2xWedE6mmfGRyKKbtCYqpCLG56JKIyHPJJI4sbYOte98P8AvK9PuVQPVDj+n+F5baj/APaef1H91sb3VuZaC0HIwtCWmKfaMMx31JU4cq8amaFmfZpiShymiI5qBoRzsjQMuXaGgppRmIya5AfxBu+PjjHxVLWwpOkepdnaf1R2MpTTtHFnaJXn9TtySfDGyr3uocLezRgsqWY26Z5n45+gRrtE90dpkjIDXP2AbyaM4H7rN1M3pdjli0AcLvNyd9HQrj+VPlkdgYVqyLtU0z+iTFwy7DR4bDn9UYkjM9qgmYMytYHnHNwI3Hy+qByiWutlvLnADdjgB1bn/C1M7tFrbURkZa3Dc+9Jjd/4MlSSRBabkDHFTFjpqnoB+JurOfl+xV11WInmNjBPVk94NPci36nqs418sfHqKUPDXNLeGzZwzuQCrslwMFqhkjpuA+YgNaeWfPbnzXe8XzYzSi+zFlwtO0EJnFjQZnguwD8clRFklTSyQxSuic4DDsclSgnkqYI5HjQ5zRqAGOpV2mG2kbFzSMrR5EeeNoXDUkZWroRE+anpS+aWQt4r3HxO+/z2VQv9IllIwOGeH9TjPyA+aP3h7LZTOhjyZpPtHkbnPh/hZWnIcZWh3fccg+GcH98Lz8dqzoFyWYz0WmId9mpwHjg50/L+EOEzfTeIzk2HW0DodRx/CmbM+GGZsbA2ZmHta7ntzHyH0Vao0Mr+LE3LHsbI8DyyAPmmRWiBOI8Siq4g3u8FzTvydpJP8Lza525z6rXnZelWpxeS1w7zu6f1O/F9Nkx3Zdr28SQDGOS6v8e/g0ZM9KSZ5m2ExsI8lq7dWNbRxgnfARGaxUjHYLWpR26jiaW4GFq9bsizRoNWl7KmMO64GVHdrWyR2oD5KGgqaejZhpG3mrEt3gduSr9bAeSNgQ2gZPNdRT1pB4BJT1sr2I83t7iLs/H5itHenk27mkkoumG+0ZiLp7laYNlxJZWaokgC2X/jGnik7RCV7cuhge9nk7YZ+pSSQT/FlT/E9Iq3GptUT5Tkve0u+Sx1jeXV0tO7eMxFhz4blJJcTN2v8Dw/iy/boWuZTQHOjiO+pOVp7g7h2+cNa3ETCWDHLHJJJDj7kSfaBdJ9hSsDAN2xc/1c0Av9TLLcqSB7vszHrI88kfwkktPhf9ULydBqh3haT5furzDhwx4LiS70/wAWY49gy/NBOsganS7n3Ywsc86a6qx11/Q7JJLz8Ojeui/TRtlqjr5nfPXnj+UBq3upI2wQ7NaAATz3cf8AJ+aSSdjIHqXuywMbs3jBvw5rXXfuU5DQBskkuj/HdSMnlfR59cXu4p3KFyyO8Ukl1DIVzK/xXeK/xSSVlC4j/wAxSSSVEP/Z",
-    quantity: 1,
-  };
+  useEffect(() => {
+    setFilteredInvestment(
+      investmentFilterString !== "All"
+        ? allInvestment.filter(
+            (item: any) => item.investmentType === investmentFilterString
+          )
+        : allInvestment
+    );
+  }, [investmentFilterString]);
+
+  useEffect(() => {
+    if (!investmentId) {
+      setIvestmenPreview(
+        allInvestment.filter((item) => item.id === investmentId)[0]
+      );
+      console.log(allInvestment);
+    } else {
+      setIvestmenPreview(
+        allInvestment.filter((item) => item.id === investmentId)[0]
+      );
+    }
+  }, [investmentId]);
+
+  useEffect(() => {
+    setAllInvestment(invoice ? invoice.invoiceData : []);
+    setFilteredInvestment(invoice ? invoice.invoiceData : []);
+    setIvestmenPreview(invoice ? invoice.invoiceData[0] : undefined);
+  }, [invoice]);
+
+  const investmentType: string[] = ["All", "Land", "Building", "Investments"];
   return (
     <>
-      <DashboardHeader />
-      <div className="flex items-start w-full">
-        <div className="w-[35%]  py-6 bg-[#FAFAFA]">
-          <div className="px-4">
-            <h4 className="font-semibold text-sm lg:text-xl">
-              Real Estate Investments
-            </h4>
-            <div className="flex items-center gap-4 my-6">
-              <Status active={false} text="All" />
-              <Status active={true} text="Building" />
-              <Status active={false} text="Land" />
+      {isLoading ? (
+        <LoaderView />
+      ) : (
+        <>
+          <div className="flex flex-col gap-2 lg:flex lg:flex-row lg:items-center justify-between py-4 px-6">
+            <ProfileDropdown name={invoice?.name} imageUrl={""} />
+            <AppButton
+              iconLeft={<BsArrowRight className="text-white h-4 w-4" />}
+              title="View Real Estate"
+              className="transparent text-dark"
+            ></AppButton>
+          </div>
+          <div className="flex flex-col-reverse lg:flex lg:flex-row items-start w-full">
+            <div className="w-full lg:w-[35%]  py-6 bg-[#FAFAFA]">
+              <div className="px-4">
+                <h4 className="font-semibold text-sm lg:text-xl">
+                  Real Estate Investments
+                </h4>
+                <div className="flex items-center gap-4 my-6">
+                  {investmentType.map((item, index: number) => (
+                    <Status
+                      isNav={true}
+                      key={index}
+                      active={investmentFilterString === item ? true : false}
+                      text={item}
+                      action={() => setIvestmetFilterString(item)}
+                    />
+                  ))}
+                </div>
+              </div>
+              {filteredInvestment.map((investment, index) => (
+                <InvestmentCard
+                  {...investment}
+                  key={index}
+                  onClick={(id) => {
+                    setInvestmetId(id);
+                  }}
+                />
+              ))}
+            </div>
+            <div className="w-full lg:w-[70%] border-l border-solid border-lightGrey">
+              {investmentPreview && <InvestmentBanner {...investmentPreview} />}
+              <ProgressBar />
+              {/* <InvestmentPreview {...investmentPreview} /> */}
+              <div className="px-4 py-6 border-solid border-t border-lightGrey grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-x-8 gap-y-8">
+                {investmentPreview && (
+                  <DealerCard {...investmentPreview.developerInfo} />
+                )}
+                {investmentPreview && (
+                  <DealerCard {...investmentPreview?.realtorGroupInfo} />
+                )}
+                {investmentPreview && (
+                  <DealerCard {...investmentPreview?.realtorInfo} />
+                )}
+              </div>
             </div>
           </div>
-
-          {investmentArray.map((investment, index) => (
-            <InvestmentCard {...investment} key={index} />
-          ))}
-        </div>
-        <div className="w-[70%] border-l border-solid border-lightGrey">
-          <InvestmentBanner {...property} />
-          <ProgressBar />
-          <InvestmentPreview />
-          <div className="p-6 border-solid border-t border-lightGrey grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-x-8 gap-y-8">
-            {dealers.map((investment, index) => (
-              <DealerCard {...investment} key={index} />
-            ))}
-          </div>
-        </div>
-      </div>
+        </>
+      )}
     </>
   );
 };
