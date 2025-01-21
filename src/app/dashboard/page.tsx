@@ -24,10 +24,10 @@ const Page = () => {
   } = useQuery({
     queryKey: ["fetchCustomerInvoice"],
     queryFn: fetchCustomerInvoice,
-    onSuccess: (res) => console.log("Recent Transactions", res),
-    onError: () => {
-      alert("Error fetching recent transactions.");
-    },
+    // onSuccess: (res) => console.log("Recent Transactions", res),
+    // onError: () => {
+    //   alert("Error fetching recent transactions.");
+    // },
   });
   const [investmentFilterString, setIvestmetFilterString] = useState("All");
   const [investmentId, setInvestmetId] = useState("");
